@@ -1,0 +1,81 @@
+#################################################################################################################
+### Data Analyst Nano Degree - Project: Identify Fraud from Enron email
+### Jorge Fernández Riera
+### January 2021
+#################################################################################################################
+
+The following *.py files containing several functions developed during the analysis were used for this project:
+
+- Data_Cleaning_Functions.py:
+	* loadData --> Loads the data contained in the "final_project_dataset.pkl" file
+	* plot_scatter_matrix -->  Generates a Scatter Matrix of a given DataFrame normalized according to the
+given method
+	* show_NaN --> Represents the presence of NaN values using missingno package
+	* discard_outliers --> Removes outliers from a dataset using a certain criteria
+	* remove_NaN --> Remove NaN values from a DataFrame using a certain criteria
+	* components_selection --> Function that perfoms an initial PCA to determine the minimum number of 
+components that contain most of the explained variance ratio of the dataset
+	* components_heatmap --> Plots a heat map with the components of a PCA model
+	* best_features_selection --> Selection of the features giving the best scoring according to a selected method.
+	* save_cleaned_data --> Exports the cleaned DataFrame into a pickle file in dictionary format
+- Classifiers_Testing.py: Class that allows to perform a grid search over a list of classifiers 
+combined with a PCA step in a pipeline in order to determine which
+combination of (pca,clf) and in which configuration provides the best scoring
+results according to a certain criteria.
+	* __init__ --> Function that initializes the classifier and identifies 
+    the different models and parameters to be considered
+	* fit --> Function that performs the GridSearch and the fitting of the 
+    different models to identify the best estimator.
+	* score_summary --> Function that provides a DataFrame summarizing the main
+    results obtained with each of the iterations of the gridsearch. Such
+    DataFrame summarizes the maximum, minimum, mean and std deviation values
+    of the obtained scores together with the parameters used on each iteration
+- poi_id.py:
+	* plot_scatter_matrix --> Generates a Scatter Matrix of a given DataFrame differentiating different
+classes defined by a certain column of the DataFrame
+	* identify_outliers --> Function that performs a LOF algorithm to determine the outliers of a certain
+dataset based on a given criteria.
+	* plot_classifiers_performance --> Function that generates a figure containing one subplot for each type of
+classifier (representing the mean_training_score and mean_test_score results
+obtained on each iteration during the GridSearch), two subplots comparing the
+mean_fitting_time and mean_score_time last by each type of classifier, and a
+last subplot summarizing the best scoring results obtained.
+	* plot_classifiers_calibration --> Function that generates a figure containing the calibration curves of the 
+different types of classifiers tested (see sklearn documentation on 
+https://scikit-learn.org/stable/auto_examples/calibration/plot_calibration_curve.html#sphx-glr-auto-examples-calibration-plot-calibration-curve-py)
+	* task1_select_features --> Loading of the stored cleaned dataset for the selected features.
+	* task2_remove_outliers --> Identification of outliers on a given dataset by means of a Local Outlier Factor
+classifier.
+	* task3_tune_features --> Function that generates a new feature called "stock_features" that contains
+the principal component of the correlated "exercised_stock_options" and 
+"total_stock_value" features. After such feature is generated, the dataset can 
+be scaled using a MinMaxScaler.
+Finally, the function divides the dataset into labels and features, considering
+as the labels the first column of the dataset.
+	* task4_classifiers_search --> This function divides the given dataset into two datasets (one for training
+of the classifiers and one for validation testing) and executes a search of
+the best estimator and configuration that provides the best scoring results
+according to a defined criteria.
+	* task4_calibration_check --> Function that generates a figure containing the calibration curves of the 
+different types of classifiers tested (see sklearn documentation on 
+https://scikit-learn.org/stable/auto_examples/calibration/plot_calibration_curve.html#sphx-glr-auto-examples-calibration-plot-calibration-curve-py)
+several bar plots summarizing the precision, recall and
+F1-score obtained on each case, both during training and testing of the
+classifiers.
+	* task5_select_classifier --> Function that selects the best estimator classifier that provides the best
+precision for "poi" identification. Alternatively, the key of one of the 
+classifiers used during the gridsearch can be also given to select the best
+estimator found for such classifier.
+	* task5b_best_testerFunction_results --> Function that performs a complete analysis but selecting some specific options 
+that were found to be the ones providing the best precision results with 
+the "tester.py" function.
+In this function, outliers are not removed and 7 features are selected, one of
+them as the principal component of other 10 features and using 'precision' 
+as the scoring method.
+	* task6_dump_results --> Export the main information of the analysis to pickle files
+	* main --> Main function that generates as an output the three pickle files containing
+the selected classfifier, dataset and list of features.
+	
+- tester.py: Function provided by Udacity for results validation.
+*** Note: The function provided with this report was slightly modified to make it work with python 3 as
+the definition of the StratifiedShuffleSplit method was changed in later versions.

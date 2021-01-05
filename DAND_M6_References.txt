@@ -1,0 +1,18 @@
+#################################################################################################################
+### Data Analyst Nano Degree - Project: Identify Fraud from Enron email
+### Jorge Fernández Riera
+### January 2021
+#################################################################################################################
+
+The following references where used or consulted to build this report:
+- sklearn documentation (https://scikit-learn.org/stable/modules/classes.html) --> This source of information was 
+extensively used along the report, in particular the documentation of each type of classifier and models used 
+along the analysis.
+- stackoverflow.com (https://stackoverflow.com/) --> It was also frequently consulted looking for examples or best
+practices.
+- matplotlib.org (https://matplotlib.org/3.3.3/index.html) --> Mainly consulted for visualizations
+- seaborn.pydata.org (https://seaborn.pydata.org/index.html) --> Mainly consulted for visualizations
+- David S.Batista blog (http://www.davidsbatista.net/blog/2018/02/23/model_optimization/) --> It provided a very 
+good example on how to define a "Classifiers Testing" class to iterate over different types of classifiers using 
+GridSearch that was used as a base for this study, adapted for our needs using Pipelines and combining PCA with 
+classifiers. 

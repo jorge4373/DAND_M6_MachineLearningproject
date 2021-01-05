@@ -586,6 +586,7 @@ def task4_classifiers_search(data,features_list,features,labels,scoreMethod):
                             'GB__min_samples_split':[1, 5, 10, 20, 50],
                             'GB__random_state':[42]},
                     'MLPC':{'MLPC__max_iter':[200, 300, 500,1000,5000],
+                            'MLPC__solver':['lbfgs', 'sgd', 'adam'],
                             'MLPC__random_state':[42]}}
     # Run a GridSearch over the parameters of each classifier combined with 
     # an initial PCA step
@@ -713,7 +714,7 @@ def task5_select_classifier(classReport, clfs, features_train, labels_train, fea
     return pipe
 
 """----------------------------------------------------------------------------------------
-Function: task6_dump_results
+Function: task5b_best_testerFunction_results
 Function that performs a complete analysis but selecting some specific options 
 that were found to be the ones providing the best precision results with 
 the "tester.py" function.
@@ -733,31 +734,22 @@ Returns:
     - outdata: Final dataset used for the analysis
     - features_list: Final list of features names used for the analysis
 """
-def task5b_best_testerFunction_results(filename, features_list, selfeat_list):
+def task5b_best_testerFunction_results(filename, features_list):
     ### Loads cleaned data
     outdata = task1_select_features(filename,features_list)
     ### Remove Outliers
-    # Step skipped
+    outdata = task2_remove_outliers(outdata,50,0.1,0.9,True)
     ### Create new features and scale
-    # Generates a combined feature
-    pca = PCA(n_components=1)
-    pca.fit(outdata[selfeat_list])
-    pcaComponents = pca.fit_transform(outdata[selfeat_list])
-    outdata['combined'] = pcaComponents
-    features_list = ['poi', 'salary', 'bonus', 'exercised_stock_options',
-                      'total_stock_value', 'deferred_income',
-                      'long_term_incentive', 'combined']
-    outdata = outdata[features_list]
     # Scale features
     data, features_list, features, labels, my_dataset = task3_tune_features(outdata,features_list,False,True)
     ### Performs GridSearch over all selected classifiers and plots performance
-    clfs, features_train, labels_train, features_test, labels_test = task4_classifiers_search(data,features_list,features,labels,'precision')
+    clfs, features_train, labels_train, features_test, labels_test = task4_classifiers_search(data,features_list,features,labels,'f1')
     ### Plots calibration curves and classification report
     classReport = task4_calibration_check(clfs, features_train, labels_train, features_test, labels_test)
     ### Selects Best Estimator classifier
-    clf = task5_select_classifier(classReport, clfs, features_train, labels_train, features_test, labels_test,'NB')
+    clf = task5_select_classifier(classReport, clfs, features_train, labels_train, features_test, labels_test,'SVM')
     ### Returns outputs
-    return clf, outdata, features_list
+    return clf, data, features_list
 
 
 
@@ -783,7 +775,12 @@ def task6_dump_results(clf, my_dataset, features_list):
     print('###############################')    
     dump_classifier_and_data(clf, my_dataset, features_list)
     print('Results succesfully exported.')
-    
+
+"""----------------------------------------------------------------------------------------
+Function: main
+Main function that generates as an output the three pickle files containing
+the selected classfifier, dataset and list of features.
+"""
 def main():
     ### Loads cleaned data
     filename = "data/final_project_dataset_CLEANED.pkl"
@@ -792,10 +789,6 @@ def main():
                       'from_poi_to_this_person', 'long_term_incentive',
                       'restricted_stock', 'salary', 'shared_receipt_with_poi',
                       'total_payments', 'total_stock_value']
-    selfeat_list = ['salary', 'bonus', 'exercised_stock_options',
-                  'restricted_stock', 'shared_receipt_with_poi',
-                  'total_payments', 'expenses', 'total_stock_value',
-                  'deferred_income', 'long_term_incentive']
     ### MAIN ANALYSIS: Disabled as finally it was found a better classifier manually
     # data = task1_select_features(filename,features_list)
     # ### Remove Outliers
@@ -815,12 +808,87 @@ def main():
                       'exercised_stock_options', 'expenses', 'from_messages',
                       'from_poi_to_this_person', 'long_term_incentive',
                       'restricted_stock', 'salary', 'shared_receipt_with_poi',
-                      'total_payments', 'total_stock_value']
-    clf, normdata, features_list = task5b_best_testerFunction_results(filename, features_list, selfeat_list)
+                      'total_stock_value']
+    clf, normdata, features_list = task5b_best_testerFunction_results(filename, features_list)
     # Store to my_dataset for easy export below.
     my_dataset = normdata.transpose().to_dict()
     ### Dump results
     task6_dump_results(clf, my_dataset, features_list)
 
+
+"""----------------------------------------------------------------------------------------
+Function: main
+Disabled function copy of the "main" function that was used to iterate over
+a certain number of options in order to comply with the requirement of 
+getting a 0.3 precision and recall values when validating the classifier with
+the "tester.py" function.
+----------------------------------
+def main():
+    ### Loads cleaned data
+    filename = "data/final_project_dataset_CLEANED.pkl"
+    features_list = ['poi', 'exercised_stock_options', 'total_stock_value', 'salary', 'bonus',
+                      'from_poi_to_this_person', 'from_messages',
+                      'long_term_incentive', 'shared_receipt_with_poi',
+                      'deferred_income','restricted_stock', 'expenses', 'total_payments']
+    models = ['NB','SVM','DT','ET','GB','KN']
+    scores = ['accuracy','f1','precision','recall']
+    ### MAIN ANALYSIS:
+    data = task1_select_features(filename,features_list)
+    ini_features_list = features_list
+    inidata = data
+    from tester import main as testerMain
+    for nf in range (len(ini_features_list)-1):
+        for out in [True,False]:
+            for corr in [True,False]:
+                if nf>0:
+                    features_list = ini_features_list[:-nf]
+                else:
+                    features_list = ini_features_list
+                outdata = inidata[features_list]
+                ### Remove Outliers
+                if out:
+                    outdata = task2_remove_outliers(outdata,50,0.1,0.9,False)
+                ### Create new features and scale
+                normdata, features_list, features, labels, my_dataset = task3_tune_features(outdata,features_list,corr,True)
+                for sc in scores:
+                    ### Performs GridSearch over all selected classifiers and plots performance
+                    clfs, features_train, labels_train, features_test, labels_test = task4_classifiers_search(normdata,features_list,features,labels,sc)
+                    ### Plots calibration curves and classification report
+                    classReport = task4_calibration_check(clfs, features_train, labels_train, features_test, labels_test)
+                    for mod in models:
+                        ### Selects Best Estimator classifier - Dissabled as a better classifier was found below
+                        clf = task5_select_classifier(classReport, clfs, features_train, labels_train, features_test, labels_test,mod)
+                        ### Dump results
+                        task6_dump_results(clf, my_dataset, features_list)
+                        ### Checks tester function
+                        precision,recall = testerMain()
+                        print('Number of Features = ',nf)
+                        print('Outliers = ',out)
+                        print('Correlations = ',corr)
+                        print('Scoring = ', sc)
+                        print('Model = ', mod)
+                        print('Precision = ',precision)
+                        print('Recall = ',recall)
+                        print(features_list)
+                        if precision > 0.3 and recall > 0.3:
+                            print('Found best classifier:')
+                            print(clf)
+                            print(features_list)
+                            print('Precision = ',precision)
+                            print('Recall = ',recall)
+                            break
+                    if precision > 0.3 and recall > 0.3:
+                        break
+                if precision > 0.3 and recall > 0.3:
+                    break
+            if precision > 0.3 and recall > 0.3:
+                break
+        if precision > 0.3 and recall > 0.3:
+            break
+    # Store to my_dataset for easy export below.
+    my_dataset = normdata.transpose().to_dict()
+    ### Dump results
+    task6_dump_results(clf, my_dataset, features_list)
+"""
 if __name__ == '__main__':
     main()

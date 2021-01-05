@@ -74,6 +74,11 @@ def test_classifier(clf, dataset, feature_list, folds = 1000):
     except:
         print ("Got a divide by zero when trying out:", clf)
         print ("Precision or recall may be undefined due to a lack of true positive predicitons.")
+        ######## TO BE REMOVED
+        precision = 0
+        recall = 0
+    ####### TO BE REMOVED
+    return precision,recall
 
 CLF_PICKLE_FILENAME = "my_classifier.pkl"
 DATASET_PICKLE_FILENAME = "my_dataset.pkl"
@@ -100,7 +105,9 @@ def main():
     ### load up student's classifier, dataset, and feature_list
     clf, dataset, feature_list = load_classifier_and_data()
     ### Run testing script
-    test_classifier(clf, dataset, feature_list)
+    # test_classifier(clf, dataset, feature_list)
+    precision,recall = test_classifier(clf, dataset, feature_list)
+    return precision, recall
 
 if __name__ == '__main__':
     main()
