@@ -496,7 +496,7 @@ def task3_tune_features(outdata,features_list,corrFlag,scaleFlag):
     labels, features = targetFeatureSplit(data)
     data = pd.DataFrame(data,index=my_dataset.keys(),columns=features_list)
     print('Features and Labels succesfully identified.')
-    
+    ### Returns outputs    
     return data, features_list, features, labels, my_dataset
 
 """----------------------------------------------------------------------------------------
@@ -591,6 +591,7 @@ def task4_classifiers_search(data,features_list,features,labels,scoreMethod):
     # an initial PCA step
     clfs = ClassifiersTesting(models, params_grid)
     clfs.fit(features_train, labels_train, scoring=scoreMethod, n_jobs=-1, refit=True)
+    ### Returns outputs
     return clfs, features_train, labels_train, features_test, labels_test
     
 
@@ -646,6 +647,7 @@ def task4_calibration_check(clfs, features_train, labels_train, features_test, l
     sm = sns.catplot(x="type", y="f1-score",hue="method", col="step",data=df,
                     kind="bar",height=7, aspect=.7)    
     plt.suptitle('F1 scores')
+    ### Returns outputs
     return df
 
 """----------------------------------------------------------------------------------------
@@ -707,9 +709,58 @@ def task5_select_classifier(classReport, clfs, features_train, labels_train, fea
     print('The obtained accuracy was: {}'.format(clf.score(feat_test_trans,labels_test)))
     classes=['Non_POI','POI']
     print(classification_report(labels_test, pred, target_names=classes))
+    ### Returns outputs
+    return pipe
+
+"""----------------------------------------------------------------------------------------
+Function: task6_dump_results
+Function that performs a complete analysis but selecting some specific options 
+that were found to be the ones providing the best precision results with 
+the "tester.py" function.
+In this function, outliers are not removed and 7 features are selected, one of
+them as the principal component of other 10 features and using 'precision' 
+as the scoring method.
+
+Arguments:
+    - filename: File path of the pickle file containing the stored dataset 
+    obtained after the "Data Cleaning" process
+    - features_list: List of the names of the features selected for the analysis
+    - selfeat_list: List of the features to be transformed into only 1 feature
+    by means of a PCA analysis
     
-    return clf
-    
+Returns:
+    - clf: Selected classifier giving the best found precision results
+    - outdata: Final dataset used for the analysis
+    - features_list: Final list of features names used for the analysis
+"""
+def task5b_best_testerFunction_results(filename, features_list, selfeat_list):
+    ### Loads cleaned data
+    outdata = task1_select_features(filename,features_list)
+    ### Remove Outliers
+    # Step skipped
+    ### Create new features and scale
+    # Generates a combined feature
+    pca = PCA(n_components=1)
+    pca.fit(outdata[selfeat_list])
+    pcaComponents = pca.fit_transform(outdata[selfeat_list])
+    outdata['combined'] = pcaComponents
+    features_list = ['poi', 'salary', 'bonus', 'exercised_stock_options',
+                      'total_stock_value', 'deferred_income',
+                      'long_term_incentive', 'combined']
+    outdata = outdata[features_list]
+    # Scale features
+    data, features_list, features, labels, my_dataset = task3_tune_features(outdata,features_list,False,True)
+    ### Performs GridSearch over all selected classifiers and plots performance
+    clfs, features_train, labels_train, features_test, labels_test = task4_classifiers_search(data,features_list,features,labels,'precision')
+    ### Plots calibration curves and classification report
+    classReport = task4_calibration_check(clfs, features_train, labels_train, features_test, labels_test)
+    ### Selects Best Estimator classifier
+    clf = task5_select_classifier(classReport, clfs, features_train, labels_train, features_test, labels_test,'NB')
+    ### Returns outputs
+    return clf, outdata, features_list
+
+
+
         
 """----------------------------------------------------------------------------------------
 Function: task6_dump_results
@@ -737,22 +788,37 @@ def main():
     ### Loads cleaned data
     filename = "data/final_project_dataset_CLEANED.pkl"
     features_list = ['poi', 'bonus', 'deferred_income',
-                     'exercised_stock_options', 'expenses', 'from_messages',
-                     'from_poi_to_this_person', 'long_term_incentive',
-                     'restricted_stock', 'salary', 'shared_receipt_with_poi',
-                     'total_payments', 'total_stock_value']
-    data = task1_select_features(filename,features_list)
-    ### Remove Outliers
-    outdata = task2_remove_outliers(data,50,0.1,0.9,True)
-    ### Create new features and scale
-    data, features_list, features, labels, my_dataset = task3_tune_features(outdata,features_list,True,True)
-    ### Performs GridSearch over all selected classifiers and plots performance
-    clfs, features_train, labels_train, features_test, labels_test = task4_classifiers_search(data,features_list,features,labels,'accuracy')
-    plot_classifiers_performance(clfs)
-    ### Plots calibration curves and classification report
-    classReport = task4_calibration_check(clfs, features_train, labels_train, features_test, labels_test)
-    ### Selects Best Estimator classifier
-    clf = task5_select_classifier(classReport, clfs, features_train, labels_train, features_test, labels_test,None)
+                      'exercised_stock_options', 'expenses', 'from_messages',
+                      'from_poi_to_this_person', 'long_term_incentive',
+                      'restricted_stock', 'salary', 'shared_receipt_with_poi',
+                      'total_payments', 'total_stock_value']
+    selfeat_list = ['salary', 'bonus', 'exercised_stock_options',
+                  'restricted_stock', 'shared_receipt_with_poi',
+                  'total_payments', 'expenses', 'total_stock_value',
+                  'deferred_income', 'long_term_incentive']
+    ### MAIN ANALYSIS: Disabled as finally it was found a better classifier manually
+    # data = task1_select_features(filename,features_list)
+    # ### Remove Outliers
+    # outdata = task2_remove_outliers(data,50,0.1,0.9,True)
+    # ### Create new features and scale
+    # data, features_list, features, labels, my_dataset = task3_tune_features(outdata,features_list,True,True)
+    # ### Performs GridSearch over all selected classifiers and plots performance
+    # clfs, features_train, labels_train, features_test, labels_test = task4_classifiers_search(data,features_list,features,labels,'accuracy')
+    # plot_classifiers_performance(clfs)
+    # ### Plots calibration curves and classification report
+    # classReport = task4_calibration_check(clfs, features_train, labels_train, features_test, labels_test)
+    # ### Selects Best Estimator classifier - Dissabled as a better classifier was found below
+    # clf = task5_select_classifier(classReport, clfs, features_train, labels_train, features_test, labels_test,None)
+    
+    ### EXTRA ANALYSIS: Select best classifier using "tester.py" function
+    features_list = ['poi', 'bonus', 'deferred_income',
+                      'exercised_stock_options', 'expenses', 'from_messages',
+                      'from_poi_to_this_person', 'long_term_incentive',
+                      'restricted_stock', 'salary', 'shared_receipt_with_poi',
+                      'total_payments', 'total_stock_value']
+    clf, normdata, features_list = task5b_best_testerFunction_results(filename, features_list, selfeat_list)
+    # Store to my_dataset for easy export below.
+    my_dataset = normdata.transpose().to_dict()
     ### Dump results
     task6_dump_results(clf, my_dataset, features_list)
 
