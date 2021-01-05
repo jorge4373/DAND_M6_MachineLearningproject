@@ -142,9 +142,6 @@ Arguments:
     - method: Method/Criteria to consider one point is an outlier
         * method="Zscore" --> it uses the z-score of the sample values and
         disregards all z-score values higher than "methodVal"
-        * method="Accuracy_Continuous" --> it considers as outliers a certain
-        percentage of the values (defined by "methodVal") that contain the
-        highest residual errors of the predictions
     - methodVal: Pass/fail criteria of the selected method
     - features_list: List of the features to be considered in the analysis
 Returns:
@@ -172,35 +169,6 @@ def discard_outliers(prediction,original,method,methodVal,features_list):
         for i in outliers:
             df = df.drop([i])
         cleaned_data = df
-    elif method == "Accuracy_Continuous": # Discard those cases with high residual error 
-        # Converts the prediction and the target values into series       
-        ori = pd.Series([float(x) for x in original], index=range(len(original)))
-        try:
-            pred = pd.Series([float(x) for x in prediction], index=range(len(prediction)))
-        except:
-            print('Prediction values are not correct.')
-            return
-        # Calculates the error of the predictions
-        df = pd.DataFrame([])
-        df['original'] = [ori]
-        df['prediction'] = [pred]
-        df['error'] = [pred - ori]
-        df['abs_error'] = np.abs(df['error'])
-        # Identify those cases with higher residual error (outliers)
-        df = df.sort_values(by='abs_error', ascending=False)
-        count = 0
-        cleaned_data = pd.DataFrame()
-        for i in df.index:
-            if count < len(original)*methodVal:
-                outliers.append(i)
-            else:
-                cleaned_data.at[i,['original','prediction','error']] = df.at[i,['original','prediction','error']]
-            count += 1
-        pass
-    elif method == "Accuracy_Discrete": # Discard those cases with high residual error
-        pass
-    elif method == "LOF": # Uses LocalOutlierFactor method
-        pass
     ### Returns outputs
     return cleaned_data, outliers
 
@@ -339,45 +307,6 @@ def components_selection(df,features_list,scaleFlag,scaleMethod,outlierFlag,outl
     # Save PCA components into a dataframe
     vardf = pd.DataFrame(pca.components_,columns=features_list[1:])
     print("The number of selected features is: {}".format(n_components_Sel))
-    
-    # # Define a pipeline to search for the best combination of PCA truncation
-    # # and classifier regularization.
-    # pca = PCA()
-    # pipe = Pipeline(steps=[('pca', pca)])
-    
-    # # Parameters of pipelines can be set using ‘__’ separated parameter names:
-    # param_grid = {
-    #     'pca__n_components': range(len(features_list))
-    # }
-    # search = GridSearchCV(pipe, param_grid, n_jobs=-1)
-    # search.fit(features, labels)
-    # print("Best parameter (CV score=%0.3f):" % search.best_score_)
-    # print(search.best_params_)
-    
-    # # Plot the PCA spectrum
-    # pca.fit(features)    
-    # fig, ax0 = plt.subplots(nrows=1, figsize=(6, 6))
-    # ax0.plot(np.arange(1, pca.n_components_ + 1),
-    #          pca.explained_variance_ratio_, '+', linewidth=2)
-    # ax0.set_ylabel('PCA explained variance ratio')    
-    # ax0.axvline(search.best_estimator_.named_steps['pca'].n_components,
-    #             linestyle=':', label='n_components chosen')
-    # ax0.legend(prop=dict(size=12))
-    
-    # # For each number of components, find the best classifier results
-    # results = pd.DataFrame(search.cv_results_)
-    # components_col = 'param_pca__n_components'
-    # best_clfs = results.groupby(components_col).apply(
-    #     lambda g: g.nlargest(1, 'mean_test_score'))
-    
-    # best_clfs.plot(x=components_col, y='mean_test_score', yerr='std_test_score',
-    #                legend=False, ax=ax1)
-    # ax1.set_ylabel('Classification accuracy (val)')
-    # ax1.set_xlabel('n_components')
-    
-    #plt.xlim(0, len(features_list))
-    
-    # plt.tight_layout()
     ### Returns outputs
     return normdata, labels, features, pca, vardf, n_components_Sel
 
