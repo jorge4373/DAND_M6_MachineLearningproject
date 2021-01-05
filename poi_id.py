@@ -732,3 +732,29 @@ def task6_dump_results(clf, my_dataset, features_list):
     print('###############################')    
     dump_classifier_and_data(clf, my_dataset, features_list)
     print('Results succesfully exported.')
+    
+def main():
+    ### Loads cleaned data
+    filename = "data/final_project_dataset_CLEANED.pkl"
+    features_list = ['poi', 'bonus', 'deferred_income',
+                     'exercised_stock_options', 'expenses', 'from_messages',
+                     'from_poi_to_this_person', 'long_term_incentive',
+                     'restricted_stock', 'salary', 'shared_receipt_with_poi',
+                     'total_payments', 'total_stock_value']
+    data = task1_select_features(filename,features_list)
+    ### Remove Outliers
+    outdata = task2_remove_outliers(data,50,0.1,0.9,True)
+    ### Create new features and scale
+    data, features_list, features, labels, my_dataset = task3_tune_features(outdata,features_list,True,True)
+    ### Performs GridSearch over all selected classifiers and plots performance
+    clfs, features_train, labels_train, features_test, labels_test = task4_classifiers_search(data,features_list,features,labels,'accuracy')
+    plot_classifiers_performance(clfs)
+    ### Plots calibration curves and classification report
+    classReport = task4_calibration_check(clfs, features_train, labels_train, features_test, labels_test)
+    ### Selects Best Estimator classifier
+    clf = task5_select_classifier(classReport, clfs, features_train, labels_train, features_test, labels_test,None)
+    ### Dump results
+    task6_dump_results(clf, my_dataset, features_list)
+
+if __name__ == '__main__':
+    main()
