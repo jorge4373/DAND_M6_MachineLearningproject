@@ -192,8 +192,36 @@ def identify_outliers(df,nn,cont,inlierRatio,plotFlag=False):
     print("Considering all features at once, a total of {:d} outliers were finally selected as real outliers (red points), thus discarded for the analysis".format(int(len(removedOutliers))))
     print("for each pair of features, an average value of {:d} outliers predicted by the LOF method were finally removed.".format(int(dfout.mean()[0])))   
     # Remove the identified outliers from the original dataset
+    """ Changed in v2 --> Manual removal from a dictionary
+    ### Code in v1:
     ind = newdata[newdata['outlierFactor'] == 1].index
     df = df.drop(ind)
+    """
+    ### Code in v2    
+    # Convert DataFrame to dictionary
+    data_dict = df.transpose().to_dict()
+    # Removes the identified outliers 
+    # Non_POIs:
+    data_dict.pop('JAEDICKE ROBERT')
+    data_dict.pop('WHALLEY LAWRENCE G')
+    data_dict.pop('WODRASKA JOHN')
+    data_dict.pop('REDMOND BRIAN L')
+    data_dict.pop('WHITE JR THOMAS E')
+    data_dict.pop('SHANKMAN JEFFREY A')
+    data_dict.pop('ALLEN PHILLIP K')
+    data_dict.pop('THE TRAVEL AGENCY IN THE PARK')
+    data_dict.pop('PAI LOU L')
+    data_dict.pop('KITCHEN LOUISE')
+    data_dict.pop('FREVERT MARK A')
+    # POIs:
+    data_dict.pop('RICE KENNETH D')
+    data_dict.pop('HIRKO JOSEPH')
+    data_dict.pop('SKILLING JEFFREY K')
+    # Converts back to DataFrame
+    data = featureFormat(data_dict, df.columns, sort_keys = False, 
+                     remove_NaN = False,remove_all_zeroes=True)
+    df = pd.DataFrame(data,index=data_dict.keys(),columns=df.columns) 
+    """ End of changed section """
     ### Returns outputs
     return df
     
@@ -221,6 +249,9 @@ def plot_classifiers_performance(clfs):
     # Gets the list of classifiers names
     clf = list(clfs.keys)
     clf.pop(0)
+    """ Added in v2 --> Removes also the Scaler key """
+    clf.pop(0)
+    """ End of added section in v2 """
     # Initializes counters for axes reference
     row = 0
     col = 0
@@ -313,8 +344,15 @@ def plot_classifiers_calibration(clfs, features_train, labels_train,features_tes
         # Gets best estimator for each method
         gs = clfs.grid_searches[k]
         pipe = gs.best_estimator_
+        """ Changed in v2 --> MinMaxScaler is now the first step
+        ### Code in v1:
         pca = pipe.steps[0][1]
         clf = pipe.steps[1][1]
+        """
+        ### Code in v2:
+        pca = pipe.steps[1][1]
+        clf = pipe.steps[2][1]
+        """ End of changed section in v2 """
         print('Best {} model: {} - {}'.format(k,pca,clf))
         # Fit and transforms features with the PCA model
         feat_train_trans = pca.fit_transform(features_train)
@@ -543,6 +581,8 @@ def task4_classifiers_search(data,features_list,features,labels,scoreMethod):
     print('Performing GridSearch over selected classifiers:')
     print('###############################')
     # Define the different classifiers to be used
+    """ Changed in v2 --> Adding MinMaxScaler to the pipeline
+    ### Code in v1:
     models = {'PCA':PCA(),
              'NB':GaussianNB(),
              'SVM':SVC(),
@@ -556,7 +596,7 @@ def task4_classifiers_search(data,features_list,features,labels,scoreMethod):
              'MLPC':MLPClassifier()}
     # Define the parameters grid to be check
     params_grid = {'PCA':{'PCA__n_components':np.arange(1,features_train[0].shape[0]+1),
-                          'PCA__random_state':[42]},
+                            'PCA__random_state':[42]},
                     'NB':{},
                     'SVM':{'SVM__kernel':['linear','poly','rbf'],
                             'SVM__gamma':[None, 1, 10],
@@ -588,6 +628,56 @@ def task4_classifiers_search(data,features_list,features,labels,scoreMethod):
                     'MLPC':{'MLPC__max_iter':[200, 300, 500,1000,5000],
                             'MLPC__solver':['lbfgs', 'sgd', 'adam'],
                             'MLPC__random_state':[42]}}
+    """
+    ### Code in v2:
+    models = {'SC':MinMaxScaler(),
+             'PCA':PCA(),
+             'NB':GaussianNB(),
+             'SVM':SVC(),
+             'DT':DecisionTreeClassifier(),
+             'ET':ExtraTreeClassifier(),
+             'KN':KNeighborsClassifier(),
+             'RN':RadiusNeighborsClassifier(),
+             'AB':AdaBoostClassifier(),
+             'RF':RandomForestClassifier(),
+             'GB':GradientBoostingClassifier(),
+             'MLPC':MLPClassifier()}
+    # Define the parameters grid to be check
+    params_grid = {'SC':{},
+                    'PCA':{'PCA__n_components':np.arange(1,features_train[0].shape[0]+1),
+                            'PCA__random_state':[42]},
+                    'NB':{},
+                    'SVM':{'SVM__kernel':['linear','poly','rbf'],
+                            'SVM__gamma':[None, 1, 10],
+                            'SVM__degree':[2, 3],
+                            'SVM__random_state':[42],
+                            'SVM__C':[1, 10, 100]},
+                    'DT':{'DT__criterion':['gini', 'entropy'],
+                            'DT__min_samples_split':[1, 5, 10, 20, 50],
+                            'DT__random_state':[42]},
+                    'ET':{'ET__criterion':['gini', 'entropy'],
+                            'ET__min_samples_split':[1, 5, 10, 20, 50],
+                            'ET__random_state':[42]},
+                    'KN':{'KN__n_neighbors':[5, 10, 50],
+                            'KN__weights':['uniform', 'distance'],
+                            'KN__algorithm':['auto', 'ball_tree', 'kd_tree']},
+                    'RN':{'RN__radius':[2, 5],
+                            'RN__weights':['uniform', 'distance'],
+                            'RN__algorithm':['auto', 'ball_tree', 'kd_tree']},
+                    'AB':{'AB__n_estimators':[10, 25, 50],
+                            'AB__random_state':[42]},
+                    'RF':{'RF__n_estimators':[10, 50, 100],
+                            'RF__criterion':['gini', 'entropy'],
+                            'RF__min_samples_split':[1, 5, 10, 20, 50],
+                            'RF__random_state':[42]},
+                    'GB':{'GB__n_estimators':[10, 50, 100],
+                            'GB__criterion':['mse', 'mae'],
+                            'GB__min_samples_split':[1, 5, 10, 20, 50],
+                            'GB__random_state':[42]},
+                    'MLPC':{'MLPC__max_iter':[1000,5000],
+                            'MLPC__solver':['lbfgs', 'sgd', 'adam'],
+                            'MLPC__random_state':[42]}}
+    """ End of changed section """
     # Run a GridSearch over the parameters of each classifier combined with 
     # an initial PCA step
     clfs = ClassifiersTesting(models, params_grid)
@@ -697,8 +787,15 @@ def task5_select_classifier(classReport, clfs, features_train, labels_train, fea
     # Gets the corresponding best estimator for the selected method
     gs = clfs.grid_searches[best_clf_method]
     pipe = gs.best_estimator_
+    """ Changed in v2 --> MinMaxScaler is now the first step
+    ### Code in v1:
     pca = pipe.steps[0][1]
     clf = pipe.steps[1][1]
+    """
+    ### Code in v2:
+    pca = pipe.steps[1][1]
+    clf = pipe.steps[2][1]
+    """ End of changed section in v2 """
     print('Best {} model: {} - {}'.format(best_clf_method,pca,clf))
     # Fit and transforms features with the PCA model
     feat_train_trans = pca.fit_transform(features_train)
@@ -742,13 +839,32 @@ def task5b_best_testerFunction_results(filename, features_list):
     ### Create new features and scale
     # Scale features
     data, features_list, features, labels, my_dataset = task3_tune_features(outdata,features_list,False,True)
+    """ Changed in v2 --> Applies directly the identified best classifier
+    ### Code in v1:
     ### Performs GridSearch over all selected classifiers and plots performance
-    clfs, features_train, labels_train, features_test, labels_test = task4_classifiers_search(data,features_list,features,labels,'f1')
+    clfs, features_train, labels_train, features_test, labels_test = task4_classifiers_search(data,features_list,features,labels,'accuracy')
     ### Plots calibration curves and classification report
     classReport = task4_calibration_check(clfs, features_train, labels_train, features_test, labels_test)
     ### Selects Best Estimator classifier
     clf = task5_select_classifier(classReport, clfs, features_train, labels_train, features_test, labels_test,'SVM')
-    ### Returns outputs
+    """    
+    ### Code in v2:
+    features_train, features_test, labels_train, labels_test = \
+        train_test_split(features, labels, test_size=0.3, random_state=42,
+                         stratify=labels)
+    pca = PCA(n_components=11, random_state=42)
+    clf = SVC(C=100, degree=2, gamma=1, random_state=42)
+    feat_train_trans = pca.fit_transform(features_train)
+    feat_test_trans = pca.fit_transform(features_test)
+    # Fits Classifier with the transformed features
+    clf.fit(feat_train_trans,labels_train)
+    # Predicts new results for validation sample
+    pred = clf.predict(feat_test_trans)
+    print('The obtained accuracy was: {}'.format(clf.score(feat_test_trans,labels_test)))
+    classes=['Non_POI','POI']
+    print(classification_report(labels_test, pred, target_names=classes))
+    """ End of changed section in v2 """
+    # ### Returns outputs
     return clf, data, features_list
 
 

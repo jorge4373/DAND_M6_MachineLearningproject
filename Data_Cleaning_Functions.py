@@ -166,9 +166,40 @@ def discard_outliers(prediction,original,method,methodVal,features_list):
                     outliers.append(i)
         outliers = list(set(outliers))
         # Remove the corresponding outliers from the original DataFrame
+        """ Changed in v2 --> Manual removal from a dictionary 
+        ### Code in v1
         for i in outliers:
             df = df.drop([i])
         cleaned_data = df
+        """
+        ### Code in v2
+        # Convert DataFrame to dictionary
+        data_dict = df.transpose().to_dict()
+        # Removes the identified outliers 
+        # Non_POIs:
+        data_dict.pop('MCCLELLAN GEORGE')
+        data_dict.pop( 'FREVERT MARK A')
+        data_dict.pop( 'BECK SALLY W')
+        data_dict.pop( 'KAMINSKI WINCENTY J')
+        data_dict.pop( 'URQUHART JOHN A')
+        data_dict.pop( 'PAI LOU L')
+        data_dict.pop( 'MARTIN AMANDA K')
+        data_dict.pop( 'SHAPIRO RICHARD S')
+        data_dict.pop( 'LAVORATO JOHN J')
+        data_dict.pop( 'WHITE JR THOMAS E')
+        data_dict.pop( 'KEAN STEVEN J')
+        # POIs:
+        data_dict.pop( 'DELAINEY DAVID W')
+        data_dict.pop( 'LAY KENNETH L')
+        data_dict.pop( 'SKILLING JEFFREY K')
+        data_dict.pop( 'HIRKO JOSEPH')
+        data_dict.pop( 'BELDEN TIMOTHY N')
+        data_dict.pop( 'RICE KENNETH D')
+        # Converts back to DataFrame
+        data = featureFormat(data_dict, features_list, sort_keys = False, 
+                         remove_NaN = False,remove_all_zeroes=True)
+        cleaned_data = pd.DataFrame(data,index=data_dict.keys(),columns=features_list) 
+        """ End of changed section """
     ### Returns outputs
     return cleaned_data, outliers
 

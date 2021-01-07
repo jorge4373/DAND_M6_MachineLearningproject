@@ -83,16 +83,25 @@ class ClassifiersTesting:
 
     def fit(self, X, y, cv=10, n_jobs=-1, verbose=3, scoring=None, refit=False):
         for key in self.keys: 
+            """ Changed in v2 --> Adding MinMaxScaler to pipeline
+            ### Code in v1:
             if key != 'PCA': # PCA model was defined always as a first step
                 try:
                     ### Define pipeline
                     try:
                         pipe = Pipeline([('PCA',self.models['PCA']),(key,self.models[key])])
+            """
+            ### Code in v2
+            if key != 'PCA' and key != 'SC': # Scaler and PCA model was defined always as a first step
+                try:
+                    ### Define pipeline
+                    try:
+                        pipe = Pipeline([('SC',self.models['SC']),('PCA',self.models['PCA']),(key,self.models[key])])
+                        """ End of changed section in v2 """
                     except:
                         raise ValueError("Pipeline could not be constructed")
                     ### Run Gridsearch over selected pipeline
                     print("\nRunning GridSearchCV for %s." % pipe)
-                    print(pipe.get_params().keys())
                     # Gets parameters for the classifier
                     params_grid = self.params[key]
                     # Adds parameters for the PCA model
